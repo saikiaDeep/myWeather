@@ -14,12 +14,11 @@ import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import com.deepsaikia.myweather.models.WeatherResponse
 import com.deepsaikia.myweather.network.WeatherService
 import com.deepsaikia.myweather.utils.Constants
@@ -30,10 +29,10 @@ import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
+import kotlinx.android.synthetic.main.activity_main.*
 import retrofit.*
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -48,10 +47,26 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        getSupportActionBar()?.hide()
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        val c= Calendar.getInstance()
+        val hour=c.get(Calendar.HOUR_OF_DAY);
+        if(hour>=18 || hour<=5)
+        {
+            linearLayout.background=ContextCompat.getDrawable(applicationContext,R.drawable.night)
+        }
+        else
+        {
+            linearLayout.background=ContextCompat.getDrawable(applicationContext,R.drawable.day)
+        }
+
 
         //restore the previously stored data
         mSharedPreferences = getSharedPreferences(Constants.PREFERENCE_NAME, Context.MODE_PRIVATE)
+        Log.e("main string stored earlier",
+            mSharedPreferences.getString(Constants.WEATHER_RESPONSE_DATA, "").toString()
+        )
         setupUI()
 
         if (!isLocationEnabled()) {
@@ -92,22 +107,12 @@ class MainActivity : AppCompatActivity() {
                 }).onSameThread()
                 .check()
         }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_refresh -> {
-                getLocationWeatherDetails()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+        floatingActionButton3.setOnClickListener{
+            getLocationWeatherDetails()
+            setupUI()
         }
     }
+
 
 
 
@@ -202,12 +207,12 @@ class MainActivity : AppCompatActivity() {
 
                         hideProgressDialog()
                         val weatherList: WeatherResponse = response.body()
-                        Log.i("Response Result", "$weatherList")
                         val weatherResponseJsonString = Gson().toJson(weatherList)
                         val editor = mSharedPreferences.edit()
                         editor.putString(Constants.WEATHER_RESPONSE_DATA, weatherResponseJsonString)
+                        Log.e("ds",weatherResponseJsonString)
                         editor.apply()
-                        setupUI()
+
                     } else {
                         when (val sc = response.code()) {
                             400 -> {
@@ -248,6 +253,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    @SuppressLint("SetTextI18n")
     private fun setupUI() {
            val weatherResponseJsonString =
             mSharedPreferences.getString(Constants.WEATHER_RESPONSE_DATA, "")
@@ -256,22 +262,31 @@ class MainActivity : AppCompatActivity() {
 
             val weatherList =
                 Gson().fromJson(weatherResponseJsonString, WeatherResponse::class.java)
+            if(weatherList.name=="Globe")
+            {
+                Toast.makeText(
+                    this,
+                    "Press refresh to start",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return
+            }
             for (z in weatherList.weather.indices) {
-                Log.i("NAMEEEEEEEE", weatherList.weather[z].main)
-
                 tv_main.text = weatherList.weather[z].main
                 tv_main_description.text = weatherList.weather[z].description
                 tv_temp.text =
-                    weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
-                tv_humidity.text = weatherList.main.humidity.toString() + " per cent"
-                tv_min.text = weatherList.main.temp_min.toString() + " min"
-                tv_max.text = weatherList.main.temp_max.toString() + " max"
+                    weatherList.main.pressure.toString() + " P"
+                tv_humidity.text = weatherList.main.humidity.toString() + "%"
+                tv_min.text = weatherList.main.temp.toString() + " °C"
+                tv_max.text = "RF "+ weatherList.main.feels_like.toString() + " °C"
                 tv_speed.text = weatherList.wind.speed.toString()
                 tv_name.text = weatherList.name
                 tv_country.text = weatherList.sys.country
                 tv_sunrise_time.text = unixTime(weatherList.sys.sunrise.toLong())
                 tv_sunset_time.text = unixTime(weatherList.sys.sunset.toLong())
-
+                Latitude.text="Latitude : "+weatherList.coord.lat.toString()
+                Longitude.text="Longitude : "+weatherList.coord.lon.toString()
+                time.text="Time of data calculation "+unixTime(weatherList.dt.toLong())
                 // Here we update the main icon
                 when (weatherList.weather[z].icon) {
                     "01d" -> iv_main.setImageResource(R.drawable.sunny)
@@ -291,22 +306,25 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+        else
+        {
+            Toast.makeText(
+                this,
+                "Press refresh to start",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+
     }
 
-    private fun getUnit(value: String): String? {
-        Log.i("unitttttt", value)
-        var value = "°C"
-        if ("US" == value || "LR" == value || "MM" == value) {
-            value = "°F"
-        }
-        return value
-    }
 
     private fun unixTime(timex: Long): String? {
         val date = Date(timex * 1000L)
         @SuppressLint("SimpleDateFormat") val sdf =
-            SimpleDateFormat("HH:mm:ss")
+            SimpleDateFormat("hh:mm a")
         sdf.timeZone = TimeZone.getDefault()
         return sdf.format(date)
     }
+
 }

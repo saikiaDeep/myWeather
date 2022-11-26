@@ -37,6 +37,7 @@ android {
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation 'com.google.android.gms:play-services-location:21.0.1'
+    implementation 'com.airbnb.android:lottie:5.2.0'
     implementation 'com.karumi:dexter:6.0.1'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit:converter-gson:2.0.0-beta2'
