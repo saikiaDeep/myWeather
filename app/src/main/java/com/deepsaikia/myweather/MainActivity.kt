@@ -19,6 +19,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.deepsaikia.myweather.models.WeatherResponse
 import com.deepsaikia.myweather.network.WeatherService
 import com.deepsaikia.myweather.utils.Constants
@@ -51,17 +52,24 @@ class MainActivity : AppCompatActivity() {
         // getLocationWeatherDetails()
 
         // mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        // Declaring a layout (changes are to be made to this)
+        // Declaring a textview (which is inside the layout)
+        val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.refreshLayout)
 
-//        val c= Calendar.getInstance()
-//        val hour=c.get(Calendar.HOUR_OF_DAY);
-//        if(hour>=18 || hour<=5)
-//        {
-//            linearLayout.background=ContextCompat.getDrawable(applicationContext,R.drawable.night)
-//        }
-//        else
-//        {
-//            linearLayout.background=ContextCompat.getDrawable(applicationContext,R.drawable.day)
-//        }
+        // Refresh function for the layout
+        swipeRefreshLayout.setOnRefreshListener{
+
+            // Your code goes here
+            // In this code, we are just changing the text in the
+            // textbox
+            Toast.makeText(applicationContext,"Refreshed",Toast.LENGTH_SHORT).show()
+            getLocationWeatherDetails()
+            showCustomProgressDialog()
+            // This line is important as it explicitly refreshes only once
+            // If "true" it implicitly refreshes forever
+            swipeRefreshLayout.isRefreshing = false
+        }
+
 
 
 //        //restore the previously stored data
